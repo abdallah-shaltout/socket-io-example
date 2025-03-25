@@ -28,7 +28,31 @@ app.post("/sendData", (req, res) => {
     });
 });
 
+app.post("/sendDataToUser", (req, res) => {
+    const { userId, eventName, data } = req.body;
+    if (!userId || !eventName || !data) {
+        return res
+            .status(400)
+            .json({ error: "userId, eventName, and data are required" });
+    }
+    io.to(userId).emit(eventName, data);
+    res.status(200).json({
+        message: `Data sent to user ${userId} on event: ${eventName}`,
+        data,
+    });
+});
+
+io.use((socket, next) => {
+    const userId = socket.handshake.query.userId;
+    socket.userId = userId;
+    next();
+});
+
 io.on("connection", (socket) => {
+    const userId = socket.userId;
+    if (userId) {
+        socket.join(userId);
+    }
     socket.on("disconnect", () => {});
 });
 
